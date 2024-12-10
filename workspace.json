@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "projects": {
+    "banco-del-tiempo": {
+      "root": "apps/banco-del-tiempo",
+      "sourceRoot": "apps/banco-del-tiempo/src",
+      "projectType": "application",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:build",
+          "outputs": ["{options.outputPath}"],
+          "options": {
+            "outputPath": "dist/apps/banco-del-tiempo",
+            "main": "apps/banco-del-tiempo/src/main.ts",
+            "tsConfig": "apps/banco-del-tiempo/tsconfig.app.json",
+            "assets": ["apps/banco-del-tiempo/src/assets"]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "extractLicenses": true,
+              "inspect": false,
+              "fileReplacements": [
+                {
+                  "replace": "apps/banco-del-tiempo/src/environments/environment.ts",
+                  "with": "apps/banco-del-tiempo/src/environments/environment.prod.ts"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "executor": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "banco-del-tiempo:build"
+          }
+        },
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["apps/banco-del-tiempo/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": ["coverage/apps/banco-del-tiempo"],
+          "options": {
+            "jestConfig": "apps/banco-del-tiempo/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco del Tiempo - Acceso</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-xl shadow-md w-96">
+            <h2 class="text-2xl font-bold mb-6 text-center">Banco del Tiempo</h2>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+                        Usuario o Correo Electrónico
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        required 
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    >
+                </div>
+                
+                <div class="mb-6 relative">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                        Contraseña
+                    </label>
+                    <div class="flex">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            required 
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+                        >
+                        <button 
+                            type="button" 
+                            id="togglePassword" 
+                            class="ml-2 text-2xl"
+                        >
+                            👁️‍🗨️
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <button 
+                        type="submit" 
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                    >
+                        Iniciar Sesión
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center">
+                <a href="/recuperar-password" class="text-blue-500 hover:text-blue-700 text-sm">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">
+                    ¿No tienes cuenta? 
+                    <a href="/registro" class="text-blue-500 hover:text-blue-700">
+                        Regístrate
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Credenciales incorrectas');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error en el inicio de sesión');
+            }
+        });
+
+        document.getElementById('togglePassword').addEventListener('click', () => {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleButton.textContent = '👁️';
+            } else {
+                passwordInput.type = 'password';
+                toggleButton.textContent = '👁️‍🗨️';
+            }
+        });
+    </script>
+</body>
+</html>
+

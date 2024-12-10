@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Banco del Tiempo</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold">Mi Banco del Tiempo</h1>
+            <div>
+                <span id="username" class="mr-4"><%= user.username %></span>
+                <button id="logoutButton" class="bg-red-500 text-white px-4 py-2 rounded">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </header>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Mis Horas</h2>
+                <div id="timeBalance" class="text-4xl font-bold text-blue-600">
+                    0 hrs
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded shadow col-span-2">
+                <h2 class="text-xl font-semibold mb-4">Intercambios Recientes</h2>
+                <div id="exchangesList">
+                    <!-- Los intercambios se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 grid md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Ofertar Servicio</h2>
+                <form id="offerServiceForm">
+                    <div class="mb-4">
+                        <label for="serviceTitle" class="block text-gray-700 text-sm font-bold mb-2">Título del Servicio</label>
+                        <input type="text" id="serviceTitle" name="serviceTitle" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div class="mb-4">
+                        <label for="serviceDescription" class="block text-gray-700 text-sm font-bold mb-2">Descripción</label>
+                        <textarea id="serviceDescription" name="serviceDescription" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+                        Ofertar Servicio
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded shadow">
+                <h2 class="text-xl font-semibold mb-4">Buscar Servicios</h2>
+                <form id="searchServiceForm">
+                    <div class="mb-4">
+                        <label for="searchTerm" class="block text-gray-700 text-sm font-bold mb-2">Buscar por palabra clave</label>
+                        <input type="text" id="searchTerm" name="searchTerm" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+                        Buscar Servicios
+                    </button>
+                </form>
+                <div id="searchResults" class="mt-4">
+                    <!-- Los resultados de búsqueda se mostrarán aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/user/dashboard');
+                const data = await response.json();
+                
+                document.getElementById('timeBalance').textContent = `${data.timeBalance} hrs`;
+                renderExchanges(data.exchanges);
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+
+        function renderExchanges(exchanges) {
+            const exchangeList = document.getElementById('exchangesList');
+            exchangeList.innerHTML = exchanges.map(exchange => `
+                <div class="bg-white p-4 rounded shadow mb-4">
+                    <div class="flex justify-between">
+                        <span>${exchange.service}</span>
+                        <span class="font-bold ${getStatusColor(exchange.status)}">
+                            ${exchange.status}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        ${exchange.description}
+                    </div>
+                    ${exchange.status === 'REQUESTED' ? `
+                        <button onclick="acceptService(${exchange.id})" class="mt-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Aceptar Solicitud
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'PENDING': 'text-yellow-600',
+                'ACCEPTED': 'text-green-600',
+                'REJECTED': 'text-red-600',
+                'COMPLETED': 'text-blue-600',
+                'REQUESTED': 'text-purple-600'
+            };
+            return colors[status] || 'text-gray-600';
+        }
+
+        async function acceptService(exchangeId) {
+            try {
+                const response = await fetch('/api/user/accept-service', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ exchangeId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Servicio aceptado con éxito');
+                    loadUserData(); // Recargar los datos del usuario
+                } else {
+                    alert('Error al aceptar el servicio: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al aceptar el servicio');
+            }
+        }
+
+        document.getElementById('logoutButton').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/logout', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Error al cerrar sesión');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cerrar sesión');
+            }
+        });
+
+        document.getElementById('offerServiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const serviceTitle = document.getElementById('serviceTitle').value;
+            const serviceDescription = document.getElementById('serviceDescription').value;
+
+            try {
+                const response = await fetch('/api/user/offer-service', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ serviceTitle, serviceDescription })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Servicio ofertado con éxito');
+                    document.getElementById('offerServiceForm').reset();
+                    loadUserData(); // Recargar los datos del usuario para mostrar el nuevo servicio
+                } else {
+                    alert('Error al ofertar el servicio');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al ofertar el servicio');
+            }
+        });
+
+        document.getElementById('searchServiceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const searchTerm = document.getElementById('searchTerm').value;
+
+            try {
+                const response = await fetch(`/api/user/search-services?term=${encodeURIComponent(searchTerm)}`);
+                const data = await response.json();
+                if (data.success) {
+                    renderSearchResults(data.services);
+                } else {
+                    alert('Error al buscar servicios');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al buscar servicios');
+            }
+        });
+
+        function renderSearchResults(services) {
+            const searchResults = document.getElementById('searchResults');
+            if (services.length === 0) {
+                searchResults.innerHTML = '<p>No se encontraron servicios.</p>';
+                return;
+            }
+
+            searchResults.innerHTML = services.map(service => `
+                <div class="bg-white p-4 rounded shadow mb-4">
+                    <h3 class="font-bold">${service.title}</h3>
+                    <p class="text-sm text-gray-600">${service.description}</p>
+                    <p class="text-sm text-gray-500 mt-2">Ofrecido por: ${service.offeredBy}</p>
+                    <button onclick="requestService(${service.id})" class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Solicitar Servicio
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function requestService(serviceId) {
+            try {
+                const response = await fetch('/api/user/request-service', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ serviceId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Servicio solicitado con éxito');
+                    loadUserData(); // Recargar los datos del usuario para mostrar la nueva solicitud
+                } else {
+                    alert('Error al solicitar el servicio: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al solicitar el servicio');
+            }
+        }
+
+        // Cargar datos del usuario al cargar la página
+        loadUserData();
+    </script>
+</body>
+</html>
+
